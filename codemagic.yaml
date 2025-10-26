@@ -1,3 +1,10 @@
+flutter clean
+rm -rf ios/Pods ios/Podfile.lock
+flutter pub get
+cd ios
+pod repo update
+pod install
+cd ..
 workflows:
   ios-workflow:
     name: iOS Debug Build
