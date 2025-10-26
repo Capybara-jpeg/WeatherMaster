@@ -1,34 +1,44 @@
 workflows:
-  ios-release:
-    name: iOS Release Build
+  ios-release-build:
+    name: iOS Release IPA Build
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
+
     scripts:
-      - name: Flutter clean
-        script: flutter clean
-
       - name: Get Flutter packages
-        script: flutter pub get
-
-      - name: Copy .env.example to .env
-        script: cp .env.example .env
-
-      - name: Install CocoaPods dependencies (fast)
         script: |
+          flutter pub get
+
+      - name: Copy environment file
+        script: |
+          if [ -f .env.example ]; then
+            cp .env.example .env
+          fi
+
+      - name: Clean and prepare iOS project
+        script: |
+          flutter clean
+          rm -rf ios/Pods ios/Podfile.lock
           cd ios
-          rm -rf Pods Podfile.lock
-          pod repo remove master || true
-          pod setup --sources=https://cdn.cocoapods.org/
+          pod repo update
           pod install
           cd ..
 
-      - name: Build iOS release IPA
+      - name: Build iOS release
         script: |
           flutter build ios --release --no-codesign
 
+      - name: Package .ipa manually
+        script: |
+          mkdir -p build/ios/iphoneos/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+          cd build/ios/iphoneos
+          zip -r Runner.ipa Payload
+          cd ../../..
+
     artifacts:
-      - build/ios/iphoneos/*.ipa
+      - build/ios/iphoneos/Runner.ipa
