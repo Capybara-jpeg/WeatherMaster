@@ -11,14 +11,20 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter pub get
-      - name: Disable code signing
+      - name: Build with xcodebuild directly
         script: |
-          sed -i '' 's/CODE_SIGN_IDENTITY = .*/CODE_SIGN_IDENTITY = "";/' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/DEVELOPMENT_TEAM = .*/DEVELOPMENT_TEAM = "";/' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGN_STYLE = .*/CODE_SIGN_STYLE = Manual;/' ios/Runner.xcodeproj/project.pbxproj
-      - name: Build unsigned iOS app
-        script: |
-          flutter build ios --debug --no-codesign
-          ls -la build/ios/iphoneos/
+          cd ios
+          pod install
+          xcodebuild -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Debug \
+            -sdk iphoneos \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            -allowProvisioningUpdates
+          cd ..
+          ls -la build/ios/iphoneos/ || ls -la ios/build/Debug-iphoneos/
     artifacts:
       - build/ios/iphoneos/**/*.app
+      - ios/build/Debug-iphoneos/**/*.app
