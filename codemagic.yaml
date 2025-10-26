@@ -11,9 +11,9 @@ workflows:
       - name: Get Flutter packages
         script: |
           flutter pub get
-      - name: Build unsigned iOS app
+      - name: Build for simulator (no signing needed)
         script: |
-          flutter build ios --debug --no-codesign
-          ls -la build/ios/iphoneos/
+          flutter build ios --debug --simulator
+          ls -la build/ios/iphonesimulator/
     artifacts:
-      - build/ios/iphoneos/**/*.app
+      - build/ios/iphonesimulator/**/*.app
