@@ -14,10 +14,14 @@ workflows:
       - name: Copy .env.example to .env
         script: |
           cp .env.example .env
-      - name: Build with xcodebuild directly
+      - name: Install CocoaPods dependencies
         script: |
           cd ios
           pod install
+          cd ..
+      - name: Build with xcodebuild directly
+        script: |
+          cd ios
           xcodebuild -workspace Runner.xcworkspace \
             -scheme Runner \
             -configuration Debug \
