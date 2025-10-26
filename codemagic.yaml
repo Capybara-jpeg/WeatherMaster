@@ -1,19 +1,20 @@
 workflows:
-  ios-workflow:
-    name: iOS Debug Build
+  ios-release-ipa:
+    name: iOS Release Build (Unsigned IPA)
     max_build_duration: 60
     instance_type: mac_mini_m2
+
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
 
     scripts:
-      - name: Pre-build clean and setup
+      - name: 🔧 Prepare environment
         script: |
           #!/bin/bash
           set -e
-          echo "🧹 Cleaning Flutter build and resetting CocoaPods..."
+          echo "🧹 Cleaning Flutter and reinstalling dependencies..."
           flutter clean
           rm -rf ios/Pods ios/Podfile.lock
           flutter pub get
@@ -22,24 +23,36 @@ workflows:
           pod install
           cd ..
 
-      - name: Copy .env.example to .env
+      - name: ⚙️ Copy environment file
         script: |
-          cp .env.example .env
+          cp .env.example .env || true
 
-      - name: Build with xcodebuild directly
+      - name: 🚀 Build iOS release (no codesign)
         script: |
-          echo "🚀 Building iOS Debug build..."
-          cd ios
-          xcodebuild -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -configuration Debug \
-            -sdk iphoneos \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            -allowProvisioningUpdates
-          cd ..
-          ls -la ios/build/Debug-iphoneos/
+          #!/bin/bash
+          set -e
+          echo "📦 Building Flutter iOS release app (no codesign)..."
+          flutter build ios --release --no-codesign
+
+      - name: 📁 Package .ipa file
+        script: |
+          #!/bin/bash
+          set -e
+          echo "📦 Creating unsigned .ipa package..."
+
+          # Create a Payload folder for iOS .ipa structure
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+
+          # Zip into IPA format
+          zip -r Runner_Release_Unsigned.ipa Payload
+
+          # Move to artifacts folder
+          mkdir -p ~/build_artifacts
+          mv Runner_Release_Unsigned.ipa ~/build_artifacts/
+
+          # Clean up
+          rm -rf Payload
 
     artifacts:
-      - ios/build/Debug-iphoneos/**/*.app
+      - ~/build_artifacts/Runner_Release_Unsigned.ipa
